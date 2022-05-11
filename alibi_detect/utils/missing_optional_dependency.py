@@ -12,13 +12,22 @@ from importlib import import_module
 
 err_msg_template = Template((
     "Attempted to use $object_name without the correct optional dependencies installed. To install "
-    + "the correct optional dependencies, run `pip install alibi[$missing_dependency]` "
+    + "the correct optional dependencies, run `pip install alibi-detect[$missing_dependency]` "
     + "from the command line. For more information, check the Installation documentation "
-    + "at https://docs.seldon.io/projects/alibi/en/latest/overview/getting_started.html."
+    + "at https://docs.seldon.io/projects/alibi-detect/en/latest/overview/getting_started.html."
 ))
 
 
-ERROR_TYPES = {'tensorflow_probability', 'tensorflow', 'torch', 'prophet', 'numba'}
+ERROR_TYPES = {
+    "fbprophet": 'prophet',
+    "holidays": 'prophet',
+    "pystan": 'prophet',
+    "numba": 'numba',
+    "tensorflow_probability": 'tensorflow',
+    "tensorflow": 'tensorflow',
+    "torch": 'torch',
+    "pytorch": 'torch'
+}
 
 
 class MissingDependency:
@@ -40,8 +49,6 @@ class MissingDependency:
         err
             Error to be raised when the class is initialized or used
         """
-        if missing_dependency not in ERROR_TYPES:
-            raise ValueError(f"missing_dependency must be one of {ERROR_TYPES}")
         self.missing_dependency = missing_dependency
         self.object_name = object_name
         self.err = err
@@ -79,21 +86,34 @@ def import_optional(module_name: str, names: Optional[List[str]] = None) -> Any:
         ModuleNotFoundError or ImportError then the requested module or named objects are replaced with instances of
         the MissingDependency class above.
     """
+    if not names:
+        names = []
 
     try:
         module = import_module(module_name)
         # TODO: We should check against specific dependency versions here.
-        if names is not None:
+        if names:
             objs = tuple(getattr(module, name) for name in names)
             return objs if len(objs) > 1 else objs[0]
         return module
     except (ImportError, ModuleNotFoundError) as err:
         if err.name is None:
             raise TypeError()
-        if err.name not in ERROR_TYPES:
+        if str(err.name) not in ERROR_TYPES:
             raise err
-        if names is not None:
+
+        missing_dependency = None
+        if not missing_dependency:
+            missing_dependency = ERROR_TYPES[err.name]
+
+        if names:
             missing_dependencies = \
-                tuple(MissingDependency(missing_dependency=err.name, object_name=name, err=err) for name in names)
+                tuple(MissingDependency(
+                    missing_dependency=missing_dependency,
+                    object_name=name,
+                    err=err) for name in names)
             return missing_dependencies if len(missing_dependencies) > 1 else missing_dependencies[0]
-        return MissingDependency(missing_dependency=err.name, object_name=module_name, err=err)
+        return MissingDependency(
+            missing_dependency=missing_dependency,
+            object_name=module_name,
+            err=err)
