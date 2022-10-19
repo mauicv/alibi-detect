@@ -26,4 +26,4 @@ def save_to_torch_script(detector, location):
 
     detector = Detector()
     detector = torch.jit.script(detector)
-    detector.save(location)
+    detector.save(str(location) + '/model.pt')

@@ -142,6 +142,4 @@ def test_knn_to_torchscript(tmp_path):
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     knn_detector.infer_threshold(x_ref, 0.1)
-    save_to_torch_script(knn_detector, './test-2')
-    # knn_backend = torch.jit.script(knn_detector)
-    # knn_backend.save(tmp_path)
+    save_to_torch_script(knn_detector, tmp_path)
