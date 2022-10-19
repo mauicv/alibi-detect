@@ -9,7 +9,7 @@ from alibi_detect.base import BaseDetector
 logger = logging.getLogger(__name__)
 
 
-class OutlierDetector(ABC):
+class OutlierDetector(BaseDetector, ABC):
     """ Base class for outlier detection algorithms. """
 
     def __init__(self):
@@ -64,5 +64,5 @@ class OutlierDetector(ABC):
             output['scores'] = scores
             output['preds'] = preds
             output['p_vals'] = p_vals
-            # output.update(scores=scores, preds=preds, p_vals=p_vals)
+
         return output

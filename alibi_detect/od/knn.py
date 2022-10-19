@@ -8,7 +8,6 @@ from alibi_detect.od.backends import KNNTorch, KNNKeops
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.od.config import ConfigMixin
 from alibi_detect.saving.registry import registry
-import torch
 
 
 X_REF_FILENAME = 'x_ref.npy'
@@ -20,10 +19,11 @@ backends = {
 
 
 @registry.register('KNN')
-class KNN(torch.nn.Module, OutlierDetector, ConfigMixin):
-    CONFIG_PARAMS = ('aggregator', 'normaliser', 'backend', 'k', 'backend')
+class KNN(OutlierDetector, ConfigMixin):
+    CONFIG_PARAMS = ('aggregator', 'normaliser', 'backend', 'k')
     BASE_OBJ = True
     LARGE_PARAMS = ()
+    MODULES = ('backend', 'normaliser', 'aggregator')
 
     def __init__(
         self,
@@ -32,7 +32,6 @@ class KNN(torch.nn.Module, OutlierDetector, ConfigMixin):
         normaliser: BaseTransform = None,
         backend: str = 'pytorch'
     ) -> None:
-        torch.nn.Module.__init__(self)
         OutlierDetector.__init__(self)
         ConfigMixin.__init__(self)
 
@@ -58,7 +57,3 @@ class KNN(torch.nn.Module, OutlierDetector, ConfigMixin):
 
     def score(self, X):
         return self.backend.score(X)
-
-    def forward(self, X):
-        outputs = self.predict(X)
-        return outputs['preds']

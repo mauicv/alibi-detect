@@ -8,6 +8,7 @@ from alibi_detect.od.config import write_config
 from alibi_detect.od.aggregation import AverageAggregator, ShiftAndScaleNormaliser, PValNormaliser, TopKAggregator
 from alibi_detect.od.backends import KNNTorch
 from alibi_detect.od.backends import GaussianRBF
+from alibi_detect.od.backends.torch.saving import save_to_torch_script
 
 
 def test_knn_single():
@@ -141,5 +142,6 @@ def test_knn_to_torchscript(tmp_path):
     x_ref = np.random.randn(100, 2)
     knn_detector.fit(x_ref)
     knn_detector.infer_threshold(x_ref, 0.1)
-    knn_backend = torch.jit.script(knn_detector)
-    knn_backend.save(tmp_path)
+    save_to_torch_script(knn_detector, './test-2')
+    # knn_backend = torch.jit.script(knn_detector)
+    # knn_backend.save(tmp_path)

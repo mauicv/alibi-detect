@@ -39,6 +39,7 @@ class ConfigMixin:
     BASE_OBJ: bool = False      # Base objects are things like detectors and Ensembles that should have there own 
                                 # self contained config and be referenced from other configs.
     # FROM_PATH: tuple = ()       # Set of values that are are resolved from paths in the config
+    MODULES = ()
 
     def _set_config(self, inputs):
         pass

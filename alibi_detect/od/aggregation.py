@@ -36,6 +36,9 @@ class BaseTransform(torch.nn.Module):
     def _transform(self, scores):
         raise NotImplementedError
 
+    def forward(self, scores):
+        return self._transform(scores)
+
 
 @registry.register('PValNormaliser')
 class PValNormaliser(BaseTransform, ConfigMixin):
