@@ -9,19 +9,20 @@ from alibi_detect.base import BaseDetector
 logger = logging.getLogger(__name__)
 
 
-class OutlierDetector(BaseDetector, ABC):
+class OutlierDetector(ABC):
     """ Base class for outlier detection algorithms. """
-    threshold_inferred = False
+
+    def __init__(self):
+        self.threshold_inferred = False
+        self.val_scores = None
 
     @abstractmethod
     def fit(self, X: np.ndarray) -> None:
         pass
 
-
     @abstractmethod
     def score(self, X: np.ndarray) -> np.ndarray:
         pass
-
 
     def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
         """
@@ -39,8 +40,7 @@ class OutlierDetector(BaseDetector, ABC):
         self.threshold = np.quantile(self.val_scores, 1-fpr)
         self.threshold_inferred = True
 
-
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self, X):
         """
         Scores the instances and then compares to pre-inferred threshold.
         For ensemble models the scores from each constituent is added to the output.
@@ -50,17 +50,19 @@ class OutlierDetector(BaseDetector, ABC):
         scores = self.score(X)
         output['raw_scores'] = scores
 
-        if getattr(self, 'normaliser') and self.normaliser.fitted:
+        if getattr(self, 'normaliser') is not None and self.normaliser.fitted:
             scores = self.normaliser.transform(scores)
             output['normalised_scores'] = scores
 
-        if getattr(self, 'aggregator') and self.aggregator.fitted:
+        if getattr(self, 'aggregator') is not None and self.aggregator.fitted:
             scores = self.aggregator.transform(scores)
             output['aggregate_scores'] = scores
 
         if self.threshold_inferred:
             p_vals = (1 + (scores[:, None] < self.val_scores).sum(-1))/len(self.val_scores)
             preds = scores > self.threshold
-            output.update(scores=scores, preds=preds, p_vals=p_vals)
-
+            output['scores'] = scores
+            output['preds'] = preds
+            output['p_vals'] = p_vals
+            # output.update(scores=scores, preds=preds, p_vals=p_vals)
         return output

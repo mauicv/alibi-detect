@@ -14,12 +14,14 @@ try:
 except ImportError:
     has_pytorch = False
 
-try:
-    import pykeops  # noqa
-    import torch  # noqa
-    has_keops = True
-except ImportError:
-    has_keops = False
+
+has_keops = False
+# try:
+#     import pykeops  # noqa
+#     import torch  # noqa
+#     has_keops = True
+# except ImportError:
+#     has_keops = False
 
 # Map from backend name to boolean value indicating its presence
 HAS_BACKEND = {

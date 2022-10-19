@@ -1,6 +1,5 @@
 from typing import Callable, Literal, Union, Optional
 import numpy as np
-import os
 
 from alibi_detect.od.base import OutlierDetector
 from alibi_detect.od.aggregation import BaseTransform
@@ -9,6 +8,8 @@ from alibi_detect.od.backends import KNNTorch, KNNKeops
 from alibi_detect.utils.frameworks import BackendValidator
 from alibi_detect.od.config import ConfigMixin
 from alibi_detect.saving.registry import registry
+import torch
+
 
 X_REF_FILENAME = 'x_ref.npy'
 
@@ -17,20 +18,24 @@ backends = {
     'keops': KNNKeops
 }
 
+
 @registry.register('KNN')
-class KNN(OutlierDetector, ConfigMixin):
-    CONFIG_PARAMS = ('k', 'kernel', 'aggregator', 'normaliser', 'backend')
-    LARGE_PARAMS = ()
+class KNN(torch.nn.Module, OutlierDetector, ConfigMixin):
+    CONFIG_PARAMS = ('aggregator', 'normaliser', 'backend', 'k', 'backend')
     BASE_OBJ = True
+    LARGE_PARAMS = ()
 
     def __init__(
         self,
-        k: Union[int, np.ndarray],
-        kernel: Optional[Callable] = None,
-        aggregator: Union[BaseTransform, None] = None,
-        normaliser: Union[BaseTransform, None] = None,
-        backend: Literal['pytorch', 'keops'] = 'pytorch'
+        k: Union[int, list],
+        aggregator: BaseTransform = None,
+        normaliser: BaseTransform = None,
+        backend: str = 'pytorch'
     ) -> None:
+        torch.nn.Module.__init__(self)
+        OutlierDetector.__init__(self)
+        ConfigMixin.__init__(self)
+
         self._set_config(locals())
         backend = backend.lower()
         BackendValidator(
@@ -39,18 +44,21 @@ class KNN(OutlierDetector, ConfigMixin):
             construct_name=self.__class__.__name__
         ).verify_backend(backend)
 
-        self.k = k
-        self.kernel = kernel
-        self.ensemble = isinstance(self.k, np.ndarray)
+        self.ensemble = isinstance(k, np.ndarray)
         self.normaliser = normaliser
         self.aggregator = aggregator
         self.fitted = False
-        self.backend = backends[backend]
+        self.backend = backends[backend](k)
 
-    def fit(self, X: np.ndarray) -> None:
-        self.x_ref = self.backend.fit(X)
+    def fit(self, X) -> None:
+        self.backend.fit(X)
         val_scores = self.score(X)
-        if getattr(self, 'normaliser'): self.normaliser.fit(val_scores)
+        if getattr(self, 'normaliser'):
+            self.normaliser.fit(val_scores)
 
-    def score(self, X: np.ndarray) -> np.ndarray:
-        return self.backend.score(X, self.x_ref, self.k, kernel=self.kernel)
+    def score(self, X):
+        return self.backend.score(X)
+
+    def forward(self, X):
+        outputs = self.predict(X)
+        return outputs['preds']

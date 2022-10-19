@@ -32,7 +32,7 @@ class ConfigMixin:
 
     define CONFIG_PARAMS, LARGE_PARAMS and BASE_OBJ on the class you've mixed this into in order to
     obtain the desired behavour. Users should be able to use this mix in on there own objects in order
-    to ensure they are serialisable. 
+    to ensure they are serialisable.
     """
     CONFIG_PARAMS: tuple = ()   # set of args passed to init that will be in config
     LARGE_PARAMS: tuple = ()    # set of args passed to init that are big and are added to config when it's getted
@@ -41,6 +41,7 @@ class ConfigMixin:
     # FROM_PATH: tuple = ()       # Set of values that are are resolved from paths in the config
 
     def _set_config(self, inputs):
+        pass
         name = self.__class__.__name__
         config: Dict[str, Any] = {
             'name': name,
@@ -53,7 +54,8 @@ class ConfigMixin:
             }
 
         for key in self.CONFIG_PARAMS:
-            if key not in self.LARGE_PARAMS: config[key] = inputs[key]
+            if key not in self.LARGE_PARAMS:
+                config[key] = inputs[key]
         self.config = config
 
     def get_config(self) -> dict:
