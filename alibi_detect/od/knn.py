@@ -1,4 +1,4 @@
-from typing import Callable, Literal, Union, Optional
+from typing import Literal, Union, Optional
 import numpy as np
 
 from alibi_detect.od.base import OutlierDetector
@@ -28,9 +28,9 @@ class KNN(OutlierDetector, ConfigMixin):
     def __init__(
         self,
         k: Union[int, list],
-        aggregator: BaseTransform = None,
-        normaliser: BaseTransform = None,
-        backend: str = 'pytorch'
+        aggregator: Optional[BaseTransform] = None,
+        normaliser: Optional[BaseTransform] = None,
+        backend: Literal = 'pytorch'
     ) -> None:
         OutlierDetector.__init__(self)
         ConfigMixin.__init__(self)

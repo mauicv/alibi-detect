@@ -16,6 +16,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
+
 def write_config(cfg: dict, filepath: Union[str, os.PathLike]):
     filepath = Path(filepath)
     if not filepath.is_dir():
