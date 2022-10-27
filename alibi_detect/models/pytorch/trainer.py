@@ -15,7 +15,7 @@ def trainer(
         preprocess_fn: Callable = None,
         epochs: int = 20,
         reg_loss_fn: Callable = (lambda model: 0),
-        verbose: int = 1,
+        verbose: int = 0,
 ) -> None:
     """
     Train PyTorch model.

@@ -2,7 +2,6 @@ from typing import Callable, Optional
 
 from functools import partial
 import numpy as np
-import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torch.optim import Adam
@@ -24,8 +23,8 @@ backends = {
 @registry.register('DeepSVDD')
 class DeepSVDD(OutlierDetector, ConfigMixin):
     CONFIG_PARAMS = ('model', 'weight_decay', 'optimizer', 'learning_rate', 'batch_size', 
-                    'preprocess_batch_fn', 'epochs', 'verbose', 'train_kwargs', 'device', 
-                    'dataset', 'dataloader', 'backend', 'input_shape')
+                     'preprocess_batch_fn', 'epochs', 'verbose', 'train_kwargs', 'device', 
+                     'dataset', 'dataloader', 'backend', 'input_shape')
     LARGE_PARAMS = ()
     BASE_OBJ = True
     FROM_PATH = ()
@@ -39,7 +38,7 @@ class DeepSVDD(OutlierDetector, ConfigMixin):
         learning_rate: float = 1e-3,
         batch_size: int = 32,
         preprocess_batch_fn: Optional[Callable] = None,
-        epochs: int = 10,
+        epochs: int = 100,
         verbose: int = 0,
         train_kwargs: Optional[dict] = None,
         device: Optional[str] = None,
@@ -78,6 +77,7 @@ class DeepSVDD(OutlierDetector, ConfigMixin):
 
         # define kwargs for dataloader and trainer
         self.backend = backends[backend](
+            model.copy(),
             device,
             weight_decay,
             dataset, dataloader,
@@ -91,11 +91,10 @@ class DeepSVDD(OutlierDetector, ConfigMixin):
         )
 
         self.original_model = model
-        self.model = model.copy()
 
     def fit(self, X: np.ndarray) -> None:
-        self.backend.fit(self.model, self.original_model)
-    
+        self.backend.fit(self.original_model, X)
+
     def score(self, X: np.ndarray) -> np.ndarray:
         return self.backend.score(X)
 
@@ -114,6 +113,6 @@ class DeepSVDD(OutlierDetector, ConfigMixin):
 
     @classmethod
     def _model_deserializer(cls, key, val):
-        import torch 
+        import torch
         model = torch.load(val)
         return model
