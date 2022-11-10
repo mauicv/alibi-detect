@@ -6,7 +6,7 @@ from alibi_detect.od.aggregation import BaseTransform
 
 from alibi_detect.od.backends import KNNTorch, KNNKeops
 from alibi_detect.utils.frameworks import BackendValidator
-from alibi_detect.od.config import ConfigMixin
+from alibi_detect.od.config import ConfigMixin, StatefulMixin
 from alibi_detect.saving.registry import registry
 
 
@@ -19,11 +19,15 @@ backends = {
 
 
 @registry.register('KNN')
-class KNN(OutlierDetector, ConfigMixin):
+class KNN(OutlierDetector, ConfigMixin, StatefulMixin):
+    # ConfigMixin Parameters
     CONFIG_PARAMS = ('aggregator', 'normaliser', 'backend', 'k')
     BASE_OBJ = True
     LARGE_PARAMS = ()
     MODULES = ('backend', 'normaliser', 'aggregator')
+
+    # StateMixin Parameters
+    STATE = ('backend',)
 
     def __init__(
         self,
@@ -56,4 +60,5 @@ class KNN(OutlierDetector, ConfigMixin):
             self.normaliser.fit(val_scores)
 
     def score(self, X):
-        return self.backend.score(X)
+        y = self.backend.score(X)
+        return y

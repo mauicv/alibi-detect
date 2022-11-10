@@ -1,11 +1,8 @@
 from __future__ import annotations
-
+from typing import List
 import logging
-import numpy as np
 
-from typing import Optional
-from abc import ABC, abstractmethod
-from alibi_detect.od.config import ConfigMixin
+from alibi_detect.od.config import ConfigMixin, StatefulMixin
 from alibi_detect.saving.registry import registry
 import torch
 
@@ -41,10 +38,13 @@ class BaseTransform(torch.nn.Module):
 
 
 @registry.register('PValNormaliser')
-class PValNormaliser(BaseTransform, ConfigMixin):
+class PValNormaliser(BaseTransform, ConfigMixin, StatefulMixin):
+    STATE = ('val_scores', 'fitted')
+
     def __init__(self):
         ConfigMixin.__init__(self)
         BaseTransform.__init__(self)
+        StatefulMixin.__init__(self)
         self._set_config(locals())
 
     def _fit(self, val_scores):
@@ -58,10 +58,13 @@ class PValNormaliser(BaseTransform, ConfigMixin):
 
 
 @registry.register('ShiftAndScaleNormaliser')
-class ShiftAndScaleNormaliser(BaseTransform, ConfigMixin):
+class ShiftAndScaleNormaliser(BaseTransform, ConfigMixin, StatefulMixin):
+    STATE = ('val_means', 'val_scales', 'fitted')
+
     def __init__(self):
         ConfigMixin.__init__(self)
         BaseTransform.__init__(self)
+        StatefulMixin.__init__(self)
         self._set_config(locals())
 
     def _fit(self, val_scores):
@@ -107,7 +110,7 @@ class AverageAggregator(BaseTransform, ConfigMixin):
     def _transform(self, scores):
         if self.weights is None:
             m = scores.shape[-1]
-            self.weights = np.ones(m)/m
+            self.weights = torch.ones(m)/m
         return scores @ self.weights
 
 
@@ -122,7 +125,7 @@ class MaxAggregator(BaseTransform, ConfigMixin):
         self.fitted = True
 
     def _transform(self, scores):
-        return np.max(scores, axis=-1)
+        return torch.max(scores, axis=-1)
 
 
 @registry.register('MinAggregator')
@@ -136,4 +139,35 @@ class MinAggregator(BaseTransform, ConfigMixin):
         self.fitted = True
 
     def _transform(self, scores):
-        return np.min(scores, axis=-1)
+        return torch.min(scores, axis=-1)
+
+
+@registry.register('Transform')
+class Transform(BaseTransform, ConfigMixin, StatefulMixin):
+    # ConfigMixin Parameters
+    BASE_OBJ = True
+    CONFIG_PARAMS = ('transforms', )
+
+    # StateMixin Parameters
+    STATE = ('transforms', )
+
+    def __init__(self, transforms):
+        ConfigMixin.__init__(self)
+        BaseTransform.__init__(self)
+        self._set_config(locals())
+        self.transforms: List[BaseTransform] = transforms
+        self.fitted = False
+
+    def _transform(self, X):
+        for transform in self.transforms:
+            X = transform(X)
+        return X
+
+    def _fit(self, X):
+        for transfrom in self.transforms:
+            transfrom.fit(X)
+        self.fitted = True
+
+    @classmethod
+    def _transforms_deserializer(cls, key, configs):
+        return [cls.deserialize_value('', cfg) for cfg in configs]

@@ -1,16 +1,21 @@
 import torch
+import os
 
 
 def save_to_torch_script(detector, location):
+    if not os.path.isdir(location):
+        os.mkdir(location)
     objs = [getattr(detector, attr) for attr in detector.MODULES
             if getattr(detector, attr) is not None]
-    threshold_inferred = detector.threshold_inferred
+    threshold_inferred = getattr(detector, 'threshold_inferred', False)
 
     class Detector(torch.nn.Module):
         def __init__(self):
             super().__init__()
             self.objs = torch.nn.ModuleList(objs)
             self.threshold_inferred = threshold_inferred
+            self.threshold = 0
+
             if self.threshold_inferred:
                 self.val_scores = detector.val_scores
                 self.threshold = detector.threshold

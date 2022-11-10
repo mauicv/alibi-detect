@@ -23,7 +23,7 @@ def load_detector(path):
     config_file = Path(path)
     cfg = read_config(config_file)
     object_name = cfg.pop('name')
-    object_meta = cfg.pop('meta')
+    _ = cfg.pop('meta')
     obj = registry.get_all()[object_name]
     detector = obj.deserialize(cfg)
     return detector

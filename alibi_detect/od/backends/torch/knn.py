@@ -3,6 +3,8 @@ import torch
 
 
 class KNNTorch(torch.nn.Module):
+    STATE = ('x_ref',)
+
     def __init__(self, k):
         super().__init__()
         self.ensemble = isinstance(k, (list, np.ndarray))
@@ -22,4 +24,5 @@ class KNNTorch(torch.nn.Module):
         return self.score(X)
 
     def fit(self, X):
+        # self.x_ref = torch.as_tensor(X, dtype=torch.float32)
         self.register_buffer('x_ref', torch.as_tensor(X, dtype=torch.float32), persistent=True)

@@ -1,18 +1,16 @@
 from __future__ import annotations
-import imp
 from copy import deepcopy
 import dill
 
-from alibi_detect.saving.saving import _serialize_object
 from pathlib import Path
 from alibi_detect.version import __version__, __config_spec__
 import logging
 from typing import Dict, Any
-from pathlib import Path
 from typing import Union
 from alibi_detect.saving.registry import registry
 import toml
 import os
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +64,7 @@ class ConfigMixin:
 
             for key in self.LARGE_PARAMS:
                 cfg[key] = getattr(self, key)
-            
-            # for key, val in cfg.items():
-            #     if isinstance(val, ModelWrapper):
-            #         cfg[key] = val.unpack()
+
         else:
             raise NotImplementedError('Getting a config (or saving via a config file) is not yet implemented for this'
                                       'detector')
@@ -89,7 +84,7 @@ class ConfigMixin:
         if hasattr(self, f'_{key}_serializer'):
             key_serialiser = getattr(self, f'_{key}_serializer')
             return key_serialiser(key, val, path)
-        
+
         elif hasattr(self, f'_{type(val).__name__}_serializer'):
             type_serialiser = getattr(self, f'_{type(val).__name__}_serializer')
             return type_serialiser(key, val, path)
@@ -142,7 +137,7 @@ class ConfigMixin:
             return target
 
         if isinstance(val, str) and '.dill' in val:
-            return dill.load(open(f'{val}', 'rb')) 
+            return dill.load(open(f'{val}', 'rb'))
 
         elif isinstance(val, dict) and val.get('name', None):
             object_name = val.pop('name')
@@ -158,6 +153,11 @@ class ConfigMixin:
             cfg[key] = cls.deserialize_value(key, val)
         return cls(**cfg)
 
+    # def save_state(self, path):
+    #     import torch
+    #     for module in self.MODULES:
+    #         torch.save(module, path)
+
 
 class ModelWrapper(ConfigMixin):
     BASE_OBJ = False
@@ -169,13 +169,13 @@ class ModelWrapper(ConfigMixin):
     def __getattr__(self, key: str):
         """Expose the wrapped model's methods and attributes."""
         if hasattr(self.model, key):
-            return getattr(self.model, key)    
+            return getattr(self.model, key)
         raise AttributeError(...)
 
     def serialize(self, path):
         path = Path(path)
         if not path.parent.is_dir():
-            path.parent.mkdir(parents=True, exist_ok=True)        
+            path.parent.mkdir(parents=True, exist_ok=True)
         path = path.with_suffix('.pt')
         import torch
         torch.save(self.model, path)
@@ -197,7 +197,7 @@ class ModelWrapper(ConfigMixin):
 #     def __getattr__(self, key: str):
 #         """Expose the wrapped model's methods and attributes."""
 #         if hasattr(self.model, key):
-#             return getattr(self.model, key)    
+#             return getattr(self.model, key)
 #         raise AttributeError(...)
 
 #     def serialize(self, path):
@@ -209,3 +209,81 @@ class ModelWrapper(ConfigMixin):
 
 #   def __call__(self, *args, **kwargs):
 #     return self.model(*args, **kwargs)
+
+
+class StatefulMixin:
+    STATE = ()
+
+    def save_state(self, path):
+        path = str(path) + '/state'
+        make_dir(path)
+        for attr_name in self.STATE:
+            item = getattr(self, attr_name)
+            item_path = f'{path}/{attr_name}'
+            self.save_item_state(attr_name, item, item_path)
+
+    def save_item_state(self, name, item, path):
+        if hasattr(self, f'_{name}_save_state'):
+            getattr(self, f'_{name}_save_state')(item, path)
+        if hasattr(self, f'_{type(item).__name__}_save_state'):
+            getattr(self, f'_{type(item).__name__}_save_state')(item, path)
+        elif isinstance(item, torch.nn.Module):
+            # print([i.__name__ for i in type(item).__mro__])
+            # torch.save(item.state_dict(), f'{path}.pt')
+            self.save_torch_module(item, path)
+        elif isinstance(item, StatefulMixin):
+            item.save_state(path)
+
+    def save_torch_module(self, module, path):
+        state_dict = module.state_dict()
+        if hasattr(module, 'STATE'):
+            for attr_name in module.STATE:
+                attr = getattr(module, attr_name)
+                state_dict[attr_name] = attr
+        torch.save(state_dict, f'{path}.pt')
+
+    def _list_save_state(self, items, path):
+        make_dir(path)
+        for ind, item in enumerate(items):
+            if isinstance(item, (StatefulMixin, ConfigMixin)):
+                item_path = f'{path}/{type(item).__name__}'
+            else:
+                item_path = f'{path}/{ind}'
+            self.save_item_state(ind, item, item_path)
+
+    def load_state(self, path):
+        path = str(path) + '/state'
+        for attr_name in self.STATE:
+            item = getattr(self, attr_name)
+            item_path = f'{path}/{attr_name}'
+            self.load_item_state(attr_name, item, item_path)
+
+    def load_item_state(self, name, item, path):
+        if hasattr(self, f'_{name}_load_state'):
+            getattr(self, f'_{name}_load_state')(item, path)
+        if hasattr(self, f'_{type(item).__name__}_load_state'):
+            getattr(self, f'_{type(item).__name__}_load_state')(item, path)
+        elif isinstance(item, torch.nn.Module):
+            self.load_torch_module(item, path)
+        elif isinstance(item, StatefulMixin):
+            item.load_state(path)
+
+    def load_torch_module(self, item, path):
+        state_dict = torch.load(f'{path}.pt')
+        if hasattr(item, 'STATE'):
+            for attr_name in item.STATE:
+                setattr(item, attr_name, state_dict.pop(attr_name))
+        item.load_state_dict(state_dict)
+
+    def _list_load_state(self, items, path):
+        for ind, item in enumerate(items):
+            if isinstance(item, (StatefulMixin, ConfigMixin)):
+                item_path = f'{path}/{type(item).__name__}'
+            else:
+                item_path = f'{path}/{ind}'
+            self.load_item_state(ind, item, item_path)
+
+
+def make_dir(path):
+    if not os.path.isdir(path):
+        os.mkdir(path)

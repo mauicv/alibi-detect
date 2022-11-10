@@ -1,10 +1,9 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-import numpy as np
-from alibi_detect.version import __version__, __config_spec__
 import logging
 from alibi_detect.base import BaseDetector
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +14,17 @@ class OutlierDetector(BaseDetector, ABC):
     def __init__(self):
         self.threshold_inferred = False
         self.val_scores = None
+        self.threshold = None
 
     @abstractmethod
-    def fit(self, X: np.ndarray) -> None:
+    def fit(self, X) -> None:
         pass
 
     @abstractmethod
-    def score(self, X: np.ndarray) -> np.ndarray:
+    def score(self, X):
         pass
 
-    def infer_threshold(self, X: np.ndarray, fpr: float) -> None:
+    def infer_threshold(self, X, fpr: float) -> None:
         """
         Infers the threshold above which only fpr% of inlying data scores.
         Also saves down the scores to be later used for computing p-values
@@ -37,7 +37,7 @@ class OutlierDetector(BaseDetector, ABC):
             if getattr(self, 'normaliser') else self.val_scores
         self.val_scores = self.aggregator.fit(self.val_scores).transform(self.val_scores) \
             if getattr(self, 'aggregator') else self.val_scores
-        self.threshold = np.quantile(self.val_scores, 1-fpr)
+        self.threshold = torch.quantile(self.val_scores, 1-fpr)
         self.threshold_inferred = True
 
     def predict(self, X):
