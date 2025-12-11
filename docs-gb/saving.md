@@ -33,7 +33,7 @@ Detectors can be saved using two formats:
 * **Legacy format**: Outlier and adversarial detectors are saved to [dill](https://dill.readthedocs.io/en/latest/dill.html) files stored within `filepath`. Drift detectors can also be saved in this legacy format by running `save_detector` with `legacy=True`. Loading is performed in the same way, by simply running `load_detector(filepath)`. 
 
 {% hint style="info" %}
-**Note:** If using `legacy=True` to save a detector or if you are loading a detector that was saved using `legacy=True` and you are using `tensorflow>2.15` then you will need to set an environmental variable `TF_USE_LEGACY_KERAS=1` in order to tell tensorflow to use the legacy keras version to save and load tensorflow models. See **TensorFlow + Keras 2 backwards compatibility** section of the [getting started docs for keras](https://keras.io/getting_started/) for more details.
+**Note:** If you save a detector with `legacy=True`, or load one that was saved with `legacy=True`, and you are using TensorFlow>2.15, then you must set the environment variable `TF_USE_LEGACY_KERAS=1`. This is in order to tell TensorFlow to use the legacy Keras 2 implementation to save and load TensorFlow models. See **TensorFlow + Keras 2 backwards compatibility** section of the [Getting Started docs for Keras](https://keras.io/getting_started/) for more details.
 {% endhint %}
 
 ## Supported detectors

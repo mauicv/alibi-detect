@@ -1,11 +1,11 @@
 # Change Log
 
-## [v0.13.0](https://github.com/SeldonIO/alibi-detect/tree/v0.12.0) (2024-04-17)
+## [v0.13.0](https://github.com/SeldonIO/alibi-detect/tree/v0.13.0) (2024-04-17)
 [Full Changelog](https://github.com/SeldonIO/alibi-detect/compare/v0.13.0...v0.12.0)
 
-This is a minor release. The main feature is adding support for python3.12 and increasing tensorflow version bound.
+This is a minor release. The main feature is adding support for Python 3.12 and increasing the TensorFlow version bound.
 
-Note: If saving detectors with `legacy=True` or loading detectors that where saved with `legacy=True` users must set the environmental variable `TF_USE_LEGACY_KERAS=1` in order to configure tensorflow to use the legacy keras 2 implementation instead of the now default keras 3. See **TensorFlow + Keras 2 backwards compatibility** section of the [getting started docs for keras](https://keras.io/getting_started/) for more details.
+Note: If saving detectors with `legacy=True` or loading detectors that were saved with `legacy=True` users must set the environment variable `TF_USE_LEGACY_KERAS=1` in order to configure tensorflow to use the legacy Keras 2 implementation instead of the now-default Keras 3. See **TensorFlow + Keras 2 backwards compatibility** section of the [Getting Started docs for Keras](https://keras.io/getting_started/) for more details.
 
 ### Added
 
@@ -15,7 +15,7 @@ Note: If saving detectors with `legacy=True` or loading detectors that where sav
 
 - Numerical stability fix for spectral residual outlier detector ([#907](http://github.com/SeldonIO/alibi-detect/pull/907))
 - Fixes Mahalanobis detector incompatibility with `scipy>1.13` ([#913](https://github.com/SeldonIO/alibi-detect/pull/913))
-- Fixed image rendering in notebooks ([#918](https://github.com/SeldonIO/alibi-detect/pull/918))
+- Fixed image rendering in Jupyter notebooks ([#918](https://github.com/SeldonIO/alibi-detect/pull/918))
 
 ### Changed
 
