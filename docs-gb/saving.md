@@ -30,7 +30,11 @@ od = load_detector(filepath)
 Detectors can be saved using two formats:
 
 * **Config format**: For drift detectors, by default `save_detector` serializes the detector via a config file named `config.toml`, stored in `filepath`. The [TOML](https://toml.io/en/) format is human-readable, which makes the config files useful for record keeping, and allows a detector to be edited before it is reloaded. For more details, see [Detector Configuration Files](config_files.md).
-* **Legacy format**: Outlier and adversarial detectors are saved to [dill](https://dill.readthedocs.io/en/latest/dill.html) files stored within `filepath`. Drift detectors can also be saved in this legacy format by running `save_detector` with `legacy=True`. Loading is performed in the same way, by simply running `load_detector(filepath)`.
+* **Legacy format**: Outlier and adversarial detectors are saved to [dill](https://dill.readthedocs.io/en/latest/dill.html) files stored within `filepath`. Drift detectors can also be saved in this legacy format by running `save_detector` with `legacy=True`. Loading is performed in the same way, by simply running `load_detector(filepath)`. 
+
+{% hint style="info" %}
+**Note:** If using `legacy=True` to save a detector or if you are loading a detector that was saved using `legacy=True` and you are using `tensorflow>2.15` then you will need to set an environmental variable `TF_USE_LEGACY_KERAS=1` in order to tell tensorflow to use the legacy keras version to save and load tensorflow models. See **TensorFlow + Keras 2 backwards compatibility** section of the [getting started docs for keras](https://keras.io/getting_started/) for more details.
+{% endhint %}
 
 ## Supported detectors
 
